@@ -3,6 +3,7 @@ import { generateOTP, generateRandomToken } from "../utils/random.util.js";
 import otpModel from "../models/otp.model.js";
 import resetTokenModel from "../models/resetToken.model.js";
 import ApiError from "../utils/ApiError.util.js";
+import userModel from "../models/user.model.js";
 
 // funciton to generate and set otps
 async function getOtp(userId, sessionId) {
@@ -45,17 +46,21 @@ async function deleteOtp(userId, sessionId) {
 }
 
 // function to create reset token
-async function createResetToken(userId) {
+async function createResetToken(email) {
+
+    // finding the user by email
+    const user = await userModel.findOne({ email });
 
     // generating a random token
     const token = generateRandomToken();
 
     // deleting old reset tokens for the user
-    await resetTokenModel.deleteMany({ userId });
+    await resetTokenModel.deleteMany({ userId: user._id });
 
     // saving the token in db
     const resetToken = await resetTokenModel.create({
-        userId, token
+        userId: user._id, 
+        token
     });
 
     return resetToken;
@@ -65,8 +70,8 @@ async function createResetToken(userId) {
 // function to verify reset token
 async function verifyResetToken(token) {
 
-    // finding the token and deleting it
-    const tokenFound = await resetTokenModel.findOneAndDelete({ token });
+    // finding the token in db
+    const tokenFound = await resetTokenModel.findOne({ token });
 
     // checking if token exists
     if (!tokenFound) throw new ApiError(400, "Invalid or expired token");
@@ -75,4 +80,12 @@ async function verifyResetToken(token) {
 
 }
 
-export { getOtp, checkOtp, deleteOtp, createResetToken, verifyResetToken };
+async function deleteToken(token) {
+
+    // deleting the token from the db 
+    await resetTokenModel.findOneAndDelete({ token });
+
+    return true;
+}
+
+export { getOtp, checkOtp, deleteOtp, createResetToken, verifyResetToken, deleteToken };

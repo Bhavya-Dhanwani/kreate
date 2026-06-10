@@ -15,7 +15,7 @@ authRouter.delete("/logout", getRefresh, asyncWraper(logoutController));
 authRouter.delete("/logoutall", getRefresh, asyncWraper(logoutAllController));
 authRouter.post("/verify", authMiddleware(true), getRefresh, asyncWraper(otpCheckController));
 authRouter.post("/resendOtp", authMiddleware(true), getRefresh, asyncWraper(resendOtpController));
-authRouter.post("/forgotpassword", authMiddleware(), getRefresh, asyncWraper(forgotPasswordController));
+authRouter.post("/forgotpassword", asyncWraper(forgotPasswordController));
 authRouter.post("/resetpassword", asyncWraper(resetPasswordController));
 
 export default authRouter;

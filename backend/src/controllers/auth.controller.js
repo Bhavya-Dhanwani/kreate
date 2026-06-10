@@ -1,7 +1,7 @@
 // Importing modules
 import { loginService, resetPassword, signupService, updateVerified } from "../services/auth.service.js";
 import { createSessionService, deleteAllSessions, deleteSessionService } from "../services/session.service.js";
-import { checkOtp, createResetToken, deleteOtp, getOtp, verifyResetToken } from "../services/tokens.service.js";
+import { checkOtp, createResetToken, deleteOtp, deleteToken, getOtp, verifyResetToken } from "../services/tokens.service.js";
 import Apiresponse from "../utils/ApiResponse.util.js";
 import ApiError from "../utils/ApiError.util.js";
 import { sanitizeUser } from "../utils/sanitize.util.js";
@@ -19,14 +19,14 @@ async function signupController(req, res) {
     const newuser = await signupService(name, email, password);
 
     // using sessions service to create session
-    const { refreshToken, session } = createSessionService(newuser._id);
+    const { refreshToken, session } = await createSessionService(newuser._id);
 
     // geenrating the access token
     const accesstoken = generateAccessToken(newuser);
 
-    const otp = getOtp(newuser._id, session._id);
+    const otp = await getOtp(newuser._id, session._id);
 
-    sendMail(email, "Otp to for acc verficaiton", `<h1>${otp.otp}</h1>`);
+    await sendMail(email, "Otp to for acc verficaiton", `<h1>${otp.otp}</h1>`);
 
     // Setting the refresh token as cookie
     res.cookie("kreate_refresh_token", refreshToken, {
@@ -136,16 +136,16 @@ async function resendOtpController(req, res) {
 async function forgotPasswordController(req, res) {
 
     // getting the user id from req
-    let { userId } = req.userPayload;
+    let { email } = req.body;
 
     // creating a reset token
-    const resetToken = await createResetToken(userId);
+    const resetToken = await createResetToken(email);
 
     // making the magic link
     const resetLink = `${FRONTEND_URL}/reset/${resetToken.token}`;
 
     // sending the mail with the link
-    await sendMail(req.user.email, "Reset your password", `<h1>Click here to reset your password</h1><a href="${resetLink}">${resetLink}</a>`);
+    await sendMail(email, "Reset your password", `<h1>Click here to reset your password</h1><a href="${resetLink}">${resetLink}</a>`);
 
     // returning the response
     return Apiresponse(res, 200, "Reset link sent to your email");
@@ -155,17 +155,17 @@ async function forgotPasswordController(req, res) {
 // function to reset password using token
 async function resetPasswordController(req, res) {
 
-    // getting the token from body
-    let { token } = req.body;
-
-    // getting the new password from body
-    let { newPassword } = req.body;
+    // getting the token and new password from body
+    let { token, newPassword } = req.body;
 
     // verifying the reset token and getting the userId
     const tokenFound = await verifyResetToken(token);
 
     // resetting the password
     await resetPassword(tokenFound.userId, newPassword);
+
+    // Deleting the token if reset is successfull
+    await deleteToken(token);
 
     // returning the response
     return Apiresponse(res, 200, "Password reset successfully");

@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
 userSchema.pre("save", function () {
 
     // Checking if the password is already hashed or not
-    if (this.isModified("password")) return;
+    if (!this.isModified("password")) return;
 
     // Hashing the password
     this.password = bcrypt.hashSync(this.password, 10);
