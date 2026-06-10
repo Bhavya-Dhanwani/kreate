@@ -11,7 +11,7 @@ async function connectDB() {
 
     // Connect the DB in the try cathc block to detect the errors 
     try {
-        await mongoose.connect("mongodb+srv://user:ywBae0dvvIq7dFYP@cluster0.u5v7z3s.mongodb.net/kreate");
+        await mongoose.connect(MONGODB_URI);
         console.log("Mongo DB Connected");
     } catch (err) {
         console.log("Error connecting the DATABASE", err);
